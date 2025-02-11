@@ -1,0 +1,63 @@
+version: "3.8"
+
+x-common-settings: &common-settings
+  restart: unless-stopped
+
+services:
+  jellyfin:
+    <<: *common-settings
+    extends:
+      file: media.yml
+      service: jellyfin
+    networks:
+      - media_net
+    
+  calibre:
+    <<: *common-settings
+    extends:
+      file: media.yml
+      service: calibre
+    networks:
+      - media_net
+    
+  dotnet-dev:
+    <<: *common-settings
+    extends:
+      file: development.yml
+      service: dotnet-dev
+    networks:
+      - dev_net
+    
+  waydroid:
+    <<: *common-settings
+    extends:
+      file: testing.yml
+      service: waydroid
+    networks:
+      - test_net
+
+  signalr-hub:
+    <<: *common-settings
+    extends:
+      file: ../compose/signalr.yml
+      service: signalr-hub
+    networks:
+      - homelab_net
+
+  dashboard:
+    <<: *common-settings
+    extends:
+      file: ../compose/signalr.yml
+      service: dashboard
+    networks:
+      - homelab_net
+
+networks:
+  media_net:
+    driver: bridge
+  dev_net:
+    driver: bridge
+  test_net:
+    driver: bridge
+  homelab_net:
+    driver: bridge

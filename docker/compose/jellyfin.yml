@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    network_mode: host
+    volumes:
+      - ${MEDIA_PATH:-/mnt/data/media}:/media
+      - ${CONFIG_PATH:-/mnt/data/config}/jellyfin:/config
+    restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri  # Hardware acceleration
+    environment:
+      - JELLYFIN_PublishedServerUrl=${PUBLIC_URL:-http://localhost:8096}
+    labels:
+      - "homelab.profile=jellyfin"
+      - "homelab.type=media"

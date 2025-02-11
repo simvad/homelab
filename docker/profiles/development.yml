@@ -1,0 +1,21 @@
+version: "3.8"
+
+x-common-settings: &common-settings
+  restart: unless-stopped
+  networks:
+    - dev_net
+  volumes:
+    - type: bind
+      source: ${BUILD_ARTIFACTS_PATH:-/mnt/data/build}
+      target: /build
+
+services:
+  dotnet-dev:
+    <<: *common-settings
+    extends:
+      file: ../compose/dotnet.yml
+      service: dotnet-dev
+
+networks:
+  dev_net:
+    driver: bridge

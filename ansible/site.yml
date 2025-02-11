@@ -1,0 +1,58 @@
+---
+- name: Configure Homelab Server
+  hosts: homelab
+  become: yes
+  
+  pre_tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+  roles:
+    - role: base
+      tags: ['base', 'system']
+    
+    - role: monitoring
+      tags: ['monitoring']
+    
+    - role: docker
+      tags: ['docker', 'containers']
+    
+    - role: kvm
+      tags: ['kvm', 'vm']
+      when: enable_kvm | default(true)
+    
+    - role: power_management
+      tags: ['power']
+
+  post_tasks:
+    - name: Create data directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ media_path }}"
+        - "{{ books_path }}"
+        - "{{ config_path }}"
+        - "{{ dev_path }}"
+        - "{{ vm_path }}"
+      tags: ['setup']
+
+    - name: Install power management scripts
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: '0755'
+      loop:
+        - src: files/power/idle-monitor.sh
+          dest: /usr/local/bin/idle-monitor.sh
+        - src: files/power/power-profiles.sh
+          dest: /usr/local/bin/power-profiles.sh
+      tags: ['power']
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes

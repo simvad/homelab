@@ -1,0 +1,22 @@
+---
+all:
+  hosts:
+    homelab:
+      ansible_host: "{{ lookup('env', 'HOMELAB_IP') }}"
+      ansible_user: homelab
+      ansible_ssh_private_key_file: ~/.ssh/homelab
+      
+      network_interface: "{{ lookup('env', 'HOMELAB_INTERFACE') | default('eth0') }}"
+      bridge_interface: br0
+      
+      media_path: /mnt/data/media
+      books_path: /mnt/data/books
+      config_path: /mnt/data/config
+      dev_path: /mnt/data/dev
+      vm_path: /mnt/data/vm
+      
+      enable_kvm: true
+      win10_memory: "{{ lookup('env', 'WIN10_MEMORY') | default('4') }}"
+      win10_cpus: "{{ lookup('env', 'WIN10_CPUS') | default('2') }}"
+      
+      public_url: "{{ lookup('env', 'HOMELAB_PUBLIC_URL') | default('http://homelab.local:8096') }}"

@@ -1,0 +1,104 @@
+@page "/"
+@inject HubConnection Hub
+@implements IAsyncDisposable
+
+<div class="p-4">
+    <h1 class="text-2xl font-bold mb-6">HomeLab Dashboard</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Power Status -->
+        <div class="p-4 bg-white rounded-lg shadow">
+            <h2 class="text-xl font-bold mb-4">System Status</h2>
+            <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 rounded-full @GetStatusColor()"></div>
+                <span>@powerState</span>
+            </div>
+        </div>
+
+        <!-- Services -->
+        <div class="p-4 bg-white rounded-lg shadow">
+            <h2 class="text-xl font-bold mb-4">Services</h2>
+            @foreach (var (service, running) in services)
+            {
+                <div class="flex justify-between items-center p-2">
+                    <span>@service</span>
+                    <span class="@(running ? "text-green-500" : "text-red-500")">
+                        @(running ? "Running" : "Stopped")
+                    </span>
+                </div>
+            }
+        </div>
+
+        <!-- Builds -->
+        <div class="p-4 bg-white rounded-lg shadow">
+            <h2 class="text-xl font-bold mb-4">Recent Builds</h2>
+            @foreach (var (project, status) in builds)
+            {
+                <div class="p-2">
+                    <span class="font-medium">@project:</span>
+                    <span>@status</span>
+                </div>
+            }
+        </div>
+
+        <!-- Metrics -->
+        <div class="p-4 bg-white rounded-lg shadow">
+            <h2 class="text-xl font-bold mb-4">System Metrics</h2>
+            <div>CPU: @cpu.ToString("F1")%</div>
+            <div>Memory: @memory.ToString("F1")%</div>
+            <div>Disk: @disk.ToString("F1")%</div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string powerState = "Unknown";
+    private Dictionary<string, bool> services = new();
+    private Dictionary<string, string> builds = new();
+    private double cpu = 0;
+    private double memory = 0;
+    private double disk = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Hub.On<string>("PowerStateChanged", state => {
+            powerState = state;
+            InvokeAsync(StateHasChanged);
+        });
+
+        Hub.On<string, bool>("ServiceStateChanged", (name, running) => {
+            services[name] = running;
+            InvokeAsync(StateHasChanged);
+        });
+
+        Hub.On<string, string>("BuildStatusUpdated", (project, status) => {
+            builds[project] = status;
+            InvokeAsync(StateHasChanged);
+        });
+
+        Hub.On<double, double, double>("MetricsUpdated", (c, m, d) => {
+            cpu = c;
+            memory = m;
+            disk = d;
+            InvokeAsync(StateHasChanged);
+        });
+
+        await Hub.StartAsync();
+    }
+
+    private string GetStatusColor() => powerState.ToLower() switch
+    {
+        "running" => "bg-green-500",
+        "starting" => "bg-yellow-500",
+        "stopping" => "bg-red-500",
+        _ => "bg-gray-500"
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Hub is not null)
+        {
+            await Hub.DisposeAsync();
+        }
+    }
+}

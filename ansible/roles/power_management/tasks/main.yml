@@ -1,0 +1,51 @@
+---
+- name: Install power management tools
+  apt:
+    name:
+      - powertop
+      - cpufrequtils
+      - acpid
+    state: present
+
+- name: Configure CPU governor
+  copy:
+    content: "GOVERNOR=\"ondemand\""
+    dest: /etc/default/cpufrequtils
+  notify: restart cpufrequtils
+
+- name: Install systemd services
+  template:
+    src: "{{ item }}.service.j2"
+    dest: "/etc/systemd/system/{{ item }}.service"
+  loop:
+    - homelab-idle-monitor
+    - homelab-profile@
+  notify: reload systemd
+
+- name: Install power management scripts
+  template:
+    src: "{{ item }}.sh.j2"
+    dest: "/usr/local/bin/{{ item }}"
+    mode: '0755'
+  loop:
+    - idle-monitor
+    - power-profiles
+  notify: reload power management
+
+- name: Configure power settings
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/homelab/power/"
+  loop:
+    - power-config.yml
+  notify: reload power management
+
+- name: Enable services
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - homelab-idle-monitor
+    - acpid
+    - powertop

@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  dotnet-dev:
+    image: mcr.microsoft.com/dotnet/sdk:7.0
+    container_name: dotnet-dev
+    volumes:
+      - ${DEV_PATH:-/mnt/data/dev}:/workspace
+      - ${BUILD_ARTIFACTS_PATH:-/mnt/data/build}:/build
+    working_dir: /workspace
+    command: tail -f /dev/null  # Keep container running
+    restart: unless-stopped
+    environment:
+      - DOTNET_CLI_TELEMETRY_OPTOUT=1
+      - DOTNET_NOLOGO=1
+    labels:
+      - "homelab.profile=development"
+      - "homelab.type=dev"

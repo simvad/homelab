@@ -1,0 +1,16 @@
+---
+- name: restart fail2ban
+  service:
+    name: fail2ban
+    state: restarted
+
+- name: enable ufw
+  ufw:
+    state: enabled
+    policy: deny
+
+- name: enable wol
+  systemd:
+    name: wol
+    enabled: yes
+    state: started

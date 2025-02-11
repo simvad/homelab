@@ -1,0 +1,14 @@
+[Unit]
+Description=Libvirt guest: %i
+After=network.target libvirtd.service
+Requires=libvirtd.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/virsh start %i
+ExecStop=/usr/bin/virsh shutdown %i
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target

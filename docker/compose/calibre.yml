@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  calibre-web:
+    image: linuxserver/calibre-web:latest
+    container_name: calibre
+    ports:
+      - "8083:8083"
+    volumes:
+      - ${BOOKS_PATH:-/mnt/data/books}:/books
+      - ${CONFIG_PATH:-/mnt/data/config}/calibre:/config
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+    labels:
+      - "homelab.profile=jellyfin"
+      - "homelab.type=media"

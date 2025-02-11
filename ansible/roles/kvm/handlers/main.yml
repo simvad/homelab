@@ -1,0 +1,17 @@
+---
+- name: reload libvirt networks
+  shell: |
+    virsh net-destroy homelab-bridge || true
+    virsh net-undefine homelab-bridge || true
+    virsh net-define /etc/libvirt/qemu/networks/bridge.xml
+    virsh net-autostart homelab-bridge
+    virsh net-start homelab-bridge
+
+- name: reload vm definitions
+  shell: |
+    virsh define /etc/libvirt/qemu/win10.xml
+  when: vm_def.changed
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes

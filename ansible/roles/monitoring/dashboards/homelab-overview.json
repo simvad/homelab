@@ -1,0 +1,31 @@
+{
+    "title": "Homelab Overview",
+    "data": {
+      "charts": [
+        {
+          "title": "System Status",
+          "type": "state",
+          "metrics": [
+            "system.power_state",
+            "signalr.connected_clients"
+          ]
+        },
+        {
+          "title": "Active Services",
+          "type": "table",
+          "metrics": [
+            "systemd.service.active"
+          ]
+        },
+        {
+          "title": "System Resources",
+          "type": "line",
+          "metrics": [
+            "system.cpu",
+            "system.ram",
+            "system.disk"
+          ]
+        }
+      ]
+    }
+  }

@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    network_mode: host
+    volumes:
+      - "{{ media_path }}:/media"
+      - "{{ config_path }}/jellyfin:/config"
+    restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri  # Hardware acceleration
+    environment:
+      - JELLYFIN_PublishedServerUrl={{ public_url }}

@@ -1,0 +1,58 @@
+---
+- name: Check CPU virtualization support
+  shell: grep -E 'svm|vmx' /proc/cpuinfo
+  register: virt_support
+  failed_when: false
+  changed_when: false
+
+- name: Fail if virtualization is not supported
+  fail:
+    msg: "CPU does not support hardware virtualization"
+  when: virt_support.rc != 0
+
+- name: Install KVM packages
+  apt:
+    name:
+      - qemu-kvm
+      - libvirt-daemon-system
+      - libvirt-clients
+      - bridge-utils
+      - virt-manager
+      - ovmf  # UEFI support
+    state: present
+
+- name: Enable and start libvirtd
+  service:
+    name: libvirtd
+    state: started
+    enabled: yes
+
+- name: Create storage directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: libvirt-qemu
+    group: libvirt-qemu
+    mode: '0755'
+  loop:
+    - "{{ vm_path }}/images"
+    - "{{ vm_path }}/iso"
+
+- name: Set up network bridge
+  template:
+    src: bridge.xml.j2
+    dest: /etc/libvirt/qemu/networks/bridge.xml
+  notify: reload libvirt networks
+
+- name: Define Windows 10 VM
+  template:
+    src: win10.xml.j2
+    dest: /etc/libvirt/qemu/win10.xml
+  register: vm_def
+  notify: reload vm definitions
+
+- name: Create systemd service for Windows VM
+  template:
+    src: libvirt-guest@.service.j2
+    dest: /etc/systemd/system/libvirt-guest@.service
+  notify: reload systemd

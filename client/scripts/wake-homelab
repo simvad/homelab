@@ -1,0 +1,86 @@
+#!/bin/bash
+set -euo pipefail
+
+# Source helper functions
+source "$HOME/.config/homelab/lib/config.sh"
+source "$HOME/.config/homelab/lib/network.sh"
+source "$HOME/.config/homelab/lib/ssh.sh"
+source "$HOME/.config/homelab/lib/logging.sh"
+
+# Help text
+usage() {
+    cat << EOF
+Usage: wake-homelab [OPTIONS] PROFILE
+
+Profiles:
+    jellyfin     - Media streaming services
+    development  - Development environment
+    testing     - Waydroid test environment
+    full        - All services
+    
+Options:
+    -h, --help   Show this help message
+    -t TIMEOUT   Maximum seconds to wait for system (default: 60)
+    -v           Verbose output
+EOF
+    exit 1
+}
+
+# Parse arguments
+TIMEOUT=60
+VERBOSE=0
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            usage
+            ;;
+        -t)
+            TIMEOUT="$2"
+            shift 2
+            ;;
+        -v)
+            VERBOSE=1
+            shift
+            ;;
+        *)
+            PROFILE="$1"
+            shift
+            ;;
+    esac
+done
+
+# Validate profile
+if [[ ! "${PROFILE:-}" =~ ^(jellyfin|development|testing|full)$ ]]; then
+    log_error "Invalid profile specified"
+    usage
+fi
+
+# Load configuration
+load_config
+
+log_info "Sending wake-on-LAN packet to $HOMELAB_MAC..."
+if ! send_wol "$HOMELAB_MAC"; then
+    log_error "Failed to send WoL packet"
+    exit 1
+fi
+
+# Wait for system to respond
+log_info "Waiting for system to respond (timeout: ${TIMEOUT}s)..."
+if ! wait_for_host "$HOMELAB_IP" "$TIMEOUT"; then
+    log_error "System did not respond within ${TIMEOUT} seconds"
+    exit 1
+fi
+
+# Wait a bit more for services to fully start
+sleep 5
+
+# Start the requested profile
+log_info "Starting profile: $PROFILE"
+if ! remote_exec "$HOMELAB_IP" "$HOMELAB_USER" "$SSH_KEY_PATH" \
+    "sudo systemctl start homelab-profile@${PROFILE}.service"; then
+    log_error "Failed to start profile"
+    exit 1
+fi
+
+log_info "Profile $PROFILE started successfully"

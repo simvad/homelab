@@ -1,0 +1,22 @@
+[Unit]
+Description=HomeLab %i Profile
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/power-profiles start %i
+ExecStop=/usr/local/bin/power-profiles stop %i
+
+# Security hardening
+ProtectSystem=strict
+ReadWritePaths=/var/run/docker.sock
+ProtectHome=read-only
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

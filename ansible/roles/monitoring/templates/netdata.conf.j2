@@ -1,0 +1,20 @@
+[global]
+  hostname = homelab
+  history = 3600
+  update every = 5
+  memory mode = ram
+  page cache size = 32
+  dbengine multihost disk space = 256
+
+[web]
+  mode = static-threaded
+  bind to = localhost
+  port = 19999
+  
+[health]
+  enabled = yes
+  run at least every seconds = 10
+  
+[plugins]
+  python.d = yes
+  go.d = yes

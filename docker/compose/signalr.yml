@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  signalr:
+    build:
+      context: ../../signalr/server
+      dockerfile: Dockerfile
+    container_name: homelab-signalr
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "homelab.profile=full"
+      - "homelab.type=infra"
+
+  dashboard:
+    build:
+      context: ../../signalr/dashboard
+      dockerfile: Dockerfile
+    container_name: homelab-dashboard
+    ports:
+      - "5001:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - SignalR__HubUrl=http://signalr/homelab
+    depends_on:
+      - signalr
+    restart: unless-stopped
+    labels:
+      - "homelab.profile=full"
+      - "homelab.type=infra"
