@@ -1,0 +1,71 @@
+#!/bin/bash
+set -euo pipefail
+
+# Load environment variables
+source /etc/homelab/backup.env
+
+# Configuration
+LOG_TAG="homelab-backup"
+BACKUP_DIRS=(
+  "{{ data_path }}"
+  "/etc/homelab"
+  "/etc/docker/compose"
+)
+EXCLUDE_PATTERNS=(
+  "*.tmp"
+  "*.log"
+  "{{ data_path }}/mvs/tk4*.zip"  # Exclude the MVS distribution zip
+)
+
+log() {
+    logger -t "$LOG_TAG" "$1"
+    echo "$(date +'%Y-%m-%d %H:%M:%S') $1"
+}
+
+# Initialize repository if not already done
+if ! restic snapshots &>/dev/null; then
+    log "Initializing new restic repository"
+    restic init
+fi
+
+# Build exclude arguments
+EXCLUDE_ARGS=""
+for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+    EXCLUDE_ARGS="$EXCLUDE_ARGS --exclude '$pattern'"
+done
+
+# Stop services before backup
+log "Stopping services for backup"
+systemctl stop docker-compose@mvs || true
+
+# Perform backup
+log "Starting backup"
+start_time=$(date +%s)
+
+restic backup ${EXCLUDE_ARGS} "${BACKUP_DIRS[@]}"
+backup_exit=$?
+
+# Restart services
+log "Restarting services after backup"
+systemctl start docker-compose@mvs || true
+
+# Apply retention policy
+log "Applying retention policy"
+restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 3 --prune
+
+end_time=$(date +%s)
+duration=$((end_time - start_time))
+
+if [ $backup_exit -eq 0 ]; then
+    log "Backup completed successfully in $duration seconds"
+else
+    log "Backup failed with exit code $backup_exit"
+fi
+
+# Check repository integrity once a week
+if [ "$(date +%u)" = "7" ]; then
+    log "Running weekly repository check"
+    restic check
+fi
+
+exit $backup_exit

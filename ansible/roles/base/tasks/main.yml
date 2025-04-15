@@ -1,0 +1,72 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install base packages
+  apt:
+    name: "{{ base_packages }}"
+    state: present
+  vars:
+    base_packages:
+      - htop
+      - iotop
+      - net-tools
+      - fail2ban
+      - wakeonlan
+      - ethtool
+      - ufw
+      - rsync
+      - python3-pip
+      - git
+      - c3270    # Terminal emulator for MVS
+
+- name: Configure fail2ban
+  copy:
+    src: jail.local
+    dest: /etc/fail2ban/jail.local
+  notify: restart fail2ban
+
+- name: Configure UFW
+  ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop:
+    - { rule: allow, port: 22, proto: tcp }         # SSH
+    - { rule: allow, port: "{{ mvs_console_port }}", proto: tcp }  # MVS Console
+    - { rule: allow, port: "{{ mvs_terminal_port }}", proto: tcp } # 3270 Terminal
+    - { rule: allow, port: 19999, proto: tcp }      # Netdata
+  notify: enable ufw
+
+- name: Enable WoL on boot
+  copy:
+    content: |
+      [Unit]
+      Description=Enable Wake-on-LAN
+      After=network.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/sbin/ethtool -s {{ network_interface }} wol g
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/wol.service
+  notify: enable wol
+
+- name: Ensure user is in docker group
+  user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+  ignore_errors: yes  
+
+- name: Set up SSH authorized keys
+  authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ lookup('file', '~/.ssh/homelab.pub') }}"
+    state: present
+  ignore_errors: yes  

@@ -1,0 +1,54 @@
+---
+# This role provides common functionality for service installation
+
+- name: Ensure Docker compose directory exists for service
+  file:
+    path: "/etc/docker/compose"
+    state: directory
+    mode: '0755'
+  
+- name: Ensure Docker compose service is installed
+  copy:
+    content: |
+      [Unit]
+      Description=Docker Compose Application Service for %i
+      Requires=docker.service
+      After=docker.service
+
+      [Service]
+      Type=simple
+      WorkingDirectory=/etc/docker/compose
+      ExecStart=/usr/bin/docker compose -f %i.yml up
+      ExecStop=/usr/bin/docker compose -f %i.yml down
+      Restart=always
+      RestartSec=10s
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/docker-compose@.service
+    mode: '0644'
+  notify: reload systemd
+
+- name: Ensure service directory exists
+  file:
+    path: "{{ data_path }}/{{ service_name }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  when: service_data_dir | default(true) | bool
+
+- name: Create Docker compose file for service
+  template:
+    src: "{{ service_template }}"
+    dest: "/etc/docker/compose/{{ service_name }}.yml"
+    mode: '0644'
+  notify: reload compose services
+
+- name: Enable and start service
+  systemd:
+    name: "docker-compose@{{ service_name }}"
+    state: "{{ service_state | default('started') }}"
+    enabled: "{{ service_enabled | default('yes') }}"
+    daemon_reload: yes
+  when: service_autostart | default(true) | bool

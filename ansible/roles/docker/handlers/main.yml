@@ -1,0 +1,22 @@
+---
+- name: restart docker
+  service:
+    name: docker
+    state: restarted
+
+- name: reload compose services
+  systemd:
+    daemon_reload: yes
+  notify: restart active services
+
+- name: restart active services
+  shell: |
+    for service in $(systemctl list-units --type=service --state=active | grep docker-compose@ | awk '{print $1}'); do
+      systemctl restart $service
+    done
+  args:
+    executable: /bin/bash
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes

@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+  servicename:  # Change this to your service name
+    image: imagename:tag  # Change this to your desired Docker image
+    container_name: servicename-container  # Change this to a meaningful container name
+    ports:
+      - "8080:80"  # Change port mappings as needed
+    volumes:
+      - "{{ data_path }}/servicename:/data"  # Map data directory to container path
+    restart: unless-stopped
+    environment:
+      - VARIABLE=value  # Set environment variables as needed
+    # Uncomment and modify if you need health checks
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 10s
+    labels:
+      - "homelab.type=servicename"  # Change to your service type
+      - "homelab.description=Service Description"  # Add a description

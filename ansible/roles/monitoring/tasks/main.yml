@@ -1,0 +1,27 @@
+---
+- name: Install Netdata
+  shell: |
+    curl -Ss https://get.netdata.cloud/kickstart.sh > /tmp/netdata-kickstart.sh
+    sh /tmp/netdata-kickstart.sh --dont-wait --no-updates --stable-channel
+    rm /tmp/netdata-kickstart.sh
+  args:
+    creates: /usr/sbin/netdata
+
+- name: Configure Netdata
+  template:
+    src: netdata.conf.j2
+    dest: /etc/netdata/netdata.conf
+  notify: restart netdata
+
+- name: Set up Docker monitoring
+  template:
+    src: python.d/docker.conf.j2
+    dest: /etc/netdata/python.d/docker.conf
+  notify: restart netdata
+
+- name: Configure UFW to allow Netdata
+  ufw:
+    rule: allow
+    port: 19999
+    proto: tcp
+  notify: enable ufw

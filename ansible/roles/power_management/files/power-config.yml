@@ -1,0 +1,12 @@
+# Power management configuration
+idle:
+  threshold: 1800  # 30 minutes
+  check_interval: 60  # 1 minute
+  load_threshold: 2  # Maximum load average to consider system idle
+
+# Power saving settings
+power_saving:
+  cpu_governor: ondemand
+  disk_spindown: 20  # minutes
+  usb_autosuspend: 1
+  pcie_aspm: powersave

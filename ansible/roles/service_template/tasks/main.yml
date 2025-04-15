@@ -1,0 +1,19 @@
+---
+# Template for creating new services
+# Copy this directory to ansible/roles/service_yourservicename and modify as needed
+
+# Set variables for your service
+- name: Set service variables
+  set_fact:
+    service_name: "servicename"  # Change this to your service name
+    service_template: "compose/service.yml.j2"
+    service_autostart: true
+    service_data_dir: true  # Set to false if you don't need a data directory
+
+# Include the service framework
+- name: Include service framework
+  include_role:
+    name: service_framework
+
+# Add any additional tasks specific to your service here
+# For example, downloading files, setting up configuration, etc.

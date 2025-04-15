@@ -1,0 +1,36 @@
+---
+- name: Download MVS 3.8j TK4- distribution
+  get_url:
+    url: http://wotho.ethz.ch/tk4-/tk4-_v1.00_current.zip
+    dest: "{{ data_path }}/tk4.zip"
+    mode: '0644'
+
+- name: Create MVS directory if it doesn't exist
+  file:
+    path: "{{ data_path }}/mvs"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Check if MVS is already extracted
+  stat:
+    path: "{{ data_path }}/mvs/unattended"
+  register: mvs_extracted
+
+- name: Extract MVS 3.8j TK4- if not already done
+  unarchive:
+    src: "{{ data_path }}/tk4.zip"
+    dest: "{{ data_path }}/mvs"
+    remote_src: yes
+  when: not mvs_extracted.stat.exists
+
+- name: Set MVS service variables
+  set_fact:
+    service_name: "mvs"
+    service_template: "compose/mvs.yml.j2"
+    service_autostart: true
+
+- name: Include service framework
+  include_role:
+    name: service_framework

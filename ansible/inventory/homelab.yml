@@ -1,0 +1,37 @@
+---
+all:
+  hosts:
+    "{{ lookup('env', 'HOMELAB_HOSTNAME') | default('homelab') }}":
+      hostname: "{{ lookup('env', 'HOMELAB_HOSTNAME') | default('homelab') }}"
+      ansible_host: "{{ lookup('env', 'HOMELAB_IP') }}"
+      ansible_user: "{{ lookup('env', 'HOMELAB_USERNAME') | default('homelab') }}"
+      ansible_ssh_private_key_file: ~/.ssh/homelab
+      
+      # Network configuration
+      network_interface: "{{ lookup('env', 'HOMELAB_INTERFACE') | default('eth0') }}"
+      mac_address: "{{ lookup('env', 'HOMELAB_MAC') }}"
+      
+      # Storage paths
+      data_path: "{{ lookup('env', 'DATA_PATH') | default('/mnt/data') }}"
+      backup_path: "{{ lookup('env', 'BACKUP_PATH') | default('/mnt/backup') }}"
+      config_path: "{{ lookup('env', 'CONFIG_PATH') | default('/mnt/data/config') }}"
+      
+      # Service enablement
+      enable_mvs: "{{ lookup('env', 'ENABLE_MVS') | default('true') | bool }}"
+      enable_monitoring: "{{ lookup('env', 'ENABLE_MONITORING') | default('true') | bool }}"
+      enable_backup: "{{ lookup('env', 'ENABLE_BACKUP') | default('true') | bool }}"
+      enable_power_mgmt: "{{ lookup('env', 'ENABLE_POWER_MGMT') | default('true') | bool }}"
+      
+      # Custom services
+      # Each additional service should be defined in environment variables as ENABLE_SERVICE_NAME
+      # Additional services will be automatically detected and enabled
+      custom_services: "{{ lookup('env') | dict2items | selectattr('key', 'match', '^ENABLE_SERVICE_.*') | list }}"
+      
+      # Backup configuration
+      backup_repo: "{{ lookup('env', 'BACKUP_REPO') }}"
+      backup_password: "{{ lookup('env', 'BACKUP_PASSWORD') }}"
+      backup_retention: "{{ lookup('env', 'BACKUP_RETENTION') | default('7d 4w 3m') }}"
+      
+      # MVS configuration
+      mvs_console_port: "{{ lookup('env', 'MVS_CONSOLE_PORT') | default('3270') }}"
+      mvs_terminal_port: "{{ lookup('env', 'MVS_TERMINAL_PORT') | default('3505') }}"

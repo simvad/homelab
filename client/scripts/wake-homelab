@@ -1,0 +1,101 @@
+#!/bin/bash
+set -euo pipefail
+
+# Source helper functions
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+CONFIG_DIR="$HOME/.config/homelab"
+
+source "$CONFIG_DIR/lib/config.sh"
+source "$CONFIG_DIR/lib/network.sh"
+source "$CONFIG_DIR/lib/ssh.sh"
+
+# Help text
+usage() {
+    cat << EOF
+Usage: wake-homelab [OPTIONS]
+
+Wake up the homelab server and connect to MVS mainframe
+
+Options:
+    -h, --help   Show this help message
+    -t TIMEOUT   Maximum seconds to wait for system (default: 60)
+    -s           SSH into the server instead of connecting to MVS
+    -m           Connect to MVS after waking (default behavior)
+EOF
+    exit 1
+}
+
+# Parse arguments
+TIMEOUT=60
+CONNECT_SSH=0
+CONNECT_MVS=1
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            usage
+            ;;
+        -t)
+            TIMEOUT="$2"
+            shift 2
+            ;;
+        -s)
+            CONNECT_SSH=1
+            CONNECT_MVS=0
+            shift
+            ;;
+        -m)
+            CONNECT_MVS=1
+            CONNECT_SSH=0
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+# Load configuration
+load_config
+
+echo "Sending wake-on-LAN packet to $HOMELAB_MAC..."
+if ! send_wol "$HOMELAB_MAC"; then
+    echo "Failed to send WoL packet"
+    exit 1
+fi
+
+# Wait for system to respond
+if ! wait_for_host "$HOMELAB_IP" "$TIMEOUT"; then
+    echo "System did not respond within ${TIMEOUT} seconds"
+    exit 1
+fi
+
+# Wait a bit more for services to fully start
+echo "Waiting for services to start..."
+sleep 10
+
+# Test SSH connection
+if ! test_ssh "$HOMELAB_IP" "$HOMELAB_USER" "$SSH_KEY_PATH"; then
+    echo "SSH connection failed"
+    exit 1
+fi
+
+echo "Homelab server is up and running!"
+
+# Connect based on user selection
+if [ "$CONNECT_SSH" -eq 1 ]; then
+    echo "Connecting via SSH..."
+    ssh -i "$SSH_KEY_PATH" "$HOMELAB_USER@$HOMELAB_IP"
+elif [ "$CONNECT_MVS" -eq 1 ]; then
+    echo "Connecting to MVS via 3270 terminal..."
+    echo "Username: herc01 / Password: CUL8TR"
+    if command -v c3270 >/dev/null 2>&1; then
+        c3270 "$HOMELAB_IP:$MVS_PORT"
+    elif command -v x3270 >/dev/null 2>&1; then
+        x3270 "$HOMELAB_IP:$MVS_PORT"
+    else
+        echo "No 3270 terminal emulator found. Please install c3270 or x3270."
+        exit 1
+    fi
+fi

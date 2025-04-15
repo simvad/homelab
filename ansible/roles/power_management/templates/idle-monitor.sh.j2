@@ -1,0 +1,78 @@
+#!/bin/bash
+set -euo pipefail
+
+# Configuration
+IDLE_THRESHOLD=1800  # 30 minutes
+CHECK_INTERVAL=60    # 1 minute
+LOAD_THRESHOLD=2     # Maximum load average
+LOG_TAG="homelab-idle-monitor"
+
+# Initialize counter
+declare -i idle_counter=0
+
+log() {
+    logger -t "$LOG_TAG" "$1"
+    echo "$(date +'%Y-%m-%d %H:%M:%S') $1"
+}
+
+check_system_idle() {
+    # Check active SSH connections (excluding our own monitoring)
+    local active_ssh
+    active_ssh=$(who | grep -v "$USER" | wc -l)
+    
+    # Check active containers (excluding monitoring)
+    local active_containers
+    active_containers=$(docker ps --format '{{.Names}}' | grep -v "netdata" | wc -l)
+    
+    # Check system load (1 minute average)
+    local load_average
+    load_average=$(awk '{print $1}' /proc/loadavg | cut -d. -f1)
+    
+    # Check active network connections (excluding established SSH)
+    local active_connections
+    active_connections=$(netstat -tun | grep 'ESTABLISHED' | grep -vE ':22 ' | wc -l)
+    
+    # System is considered idle if all checks pass
+    [[ $active_ssh -eq 0 ]] && \
+    [[ $active_containers -eq 0 ]] && \
+    [[ $load_average -lt $LOAD_THRESHOLD ]] && \
+    [[ $active_connections -eq 0 ]]
+}
+
+cleanup() {
+    log "Shutting down idle monitor"
+    exit 0
+}
+
+trap cleanup SIGTERM SIGINT
+
+log "Starting idle monitor (threshold: ${IDLE_THRESHOLD}s, interval: ${CHECK_INTERVAL}s)"
+
+while true; do
+    if check_system_idle; then
+        idle_counter+=CHECK_INTERVAL
+        
+        if [[ $idle_counter -ge $IDLE_THRESHOLD ]]; then
+            log "System has been idle for ${idle_counter}s, initiating shutdown"
+            
+            # Stop all services first to ensure clean shutdown
+            log "Stopping Docker services"
+            systemctl stop 'docker-compose@*'
+            
+            # Give services time to clean up
+            sleep 10
+            
+            # Initiate shutdown
+            log "Initiating system shutdown"
+            systemctl poweroff
+            exit 0
+        fi
+    else
+        if [[ $idle_counter -gt 0 ]]; then
+            log "Activity detected, resetting idle counter"
+            idle_counter=0
+        fi
+    fi
+    
+    sleep "$CHECK_INTERVAL"
+done

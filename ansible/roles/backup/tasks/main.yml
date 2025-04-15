@@ -1,0 +1,38 @@
+---
+- name: Install restic
+  apt:
+    name: restic
+    state: present
+
+- name: Create backup directory
+  file:
+    path: "{{ backup_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Create homelab configuration directory
+  file:
+    path: /etc/homelab
+    state: directory
+    mode: '0755'
+
+- name: Install backup script
+  template:
+    src: backup.sh.j2
+    dest: /usr/local/bin/backup.sh
+    mode: '0755'
+
+- name: Create backup environment file
+  copy:
+    content: |
+      RESTIC_REPOSITORY={{ backup_repo }}
+      RESTIC_PASSWORD={{ backup_password }}
+    dest: /etc/homelab/backup.env
+    mode: '0600'
+
+- name: Set up backup cron job
+  cron:
+    name: "Homelab backup"
+    hour: "3"
+    minute: "0"
+    job: "/usr/local/bin/backup.sh > /var/log/homelab-backup.log 2>&1"

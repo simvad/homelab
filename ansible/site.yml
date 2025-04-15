@@ -1,0 +1,81 @@
+---
+- name: Configure HomeLab MVS Server
+  hosts: all
+  become: yes
+  
+  pre_tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+    
+    - name: Set hostname
+      hostname:
+        name: "{{ hostname }}"
+      
+    - name: Ensure primary user exists
+      user:
+        name: "{{ ansible_user }}"
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        create_home: yes
+    
+    - name: Allow passwordless sudo for primary user
+      lineinfile:
+        path: /etc/sudoers.d/{{ ansible_user }}
+        line: "{{ ansible_user }} ALL=(ALL) NOPASSWD: ALL"
+        state: present
+        mode: 0440
+        create: yes
+        validate: 'visudo -cf %s'
+
+  roles:
+    - role: base
+      tags: ['base', 'system']
+    
+    - role: monitoring
+      tags: ['monitoring']
+      when: enable_monitoring | bool
+    
+    - role: docker
+      tags: ['docker', 'containers']
+    
+    - role: service_mvs
+      tags: ['mvs', 'containers']
+      when: enable_mvs | bool
+    
+    - role: power_management
+      tags: ['power']
+      when: enable_power_mgmt | bool
+      
+    - role: backup
+      tags: ['backup']
+      when: enable_backup | bool
+    
+    # Load custom services dynamically if they exist
+    - role: "{{ item.key | regex_replace('^ENABLE_SERVICE_', '') | lower }}"
+      tags: ['custom', 'containers']
+      when: item.value | bool
+      loop: "{{ custom_services }}"
+      loop_control:
+        label: "{{ item.key | regex_replace('^ENABLE_SERVICE_', '') | lower }}"
+
+  post_tasks:
+    - name: Create data directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      loop:
+        - "{{ data_path }}"
+        - "{{ backup_path }}"
+        - "{{ config_path }}"
+      tags: ['setup']
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
