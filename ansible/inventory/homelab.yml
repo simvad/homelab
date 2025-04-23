@@ -21,12 +21,7 @@ all:
       enable_monitoring: "{{ lookup('env', 'ENABLE_MONITORING') | default('true') | bool }}"
       enable_backup: "{{ lookup('env', 'ENABLE_BACKUP') | default('true') | bool }}"
       enable_power_mgmt: "{{ lookup('env', 'ENABLE_POWER_MGMT') | default('true') | bool }}"
-      
-      # Custom services
-      # Each additional service should be defined in environment variables as ENABLE_SERVICE_NAME
-      # Additional services will be automatically detected and enabled
-      custom_services: "{{ lookup('env') | dict2items | selectattr('key', 'match', '^ENABLE_SERVICE_.*') | list }}"
-      
+            
       # Backup configuration
       backup_repo: "{{ lookup('env', 'BACKUP_REPO') }}"
       backup_password: "{{ lookup('env', 'BACKUP_PASSWORD') }}"

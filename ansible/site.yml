@@ -52,14 +52,6 @@
     - role: backup
       tags: ['backup']
       when: enable_backup | bool
-    
-    # Load custom services dynamically if they exist
-    - role: "{{ item.key | regex_replace('^ENABLE_SERVICE_', '') | lower }}"
-      tags: ['custom', 'containers']
-      when: item.value | bool
-      loop: "{{ custom_services }}"
-      loop_control:
-        label: "{{ item.key | regex_replace('^ENABLE_SERVICE_', '') | lower }}"
 
   post_tasks:
     - name: Create data directories
