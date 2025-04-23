@@ -22,7 +22,7 @@ check_system_idle() {
     
     # Check active containers (excluding monitoring)
     local active_containers
-    active_containers=$(docker ps --format '{{.Names}}' | grep -v "netdata" | wc -l)
+    active_containers=$(docker ps --format '{% raw %}{{.Names}}{% endraw %}' | grep -v "netdata" | wc -l)
     
     # Check system load (1 minute average)
     local load_average

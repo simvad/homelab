@@ -21,6 +21,7 @@
       - python3-pip
       - git
       - c3270    # Terminal emulator for MVS
+      - unzip    # Required for MVS TK4- extraction
 
 - name: Configure fail2ban
   copy:
