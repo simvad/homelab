@@ -57,13 +57,6 @@
     dest: /etc/systemd/system/wol.service
   notify: enable wol
 
-- name: Ensure user is in docker group
-  user:
-    name: "{{ ansible_user }}"
-    groups: docker
-    append: yes
-  ignore_errors: yes  
-
 - name: Set up SSH authorized keys
   authorized_key:
     user: "{{ ansible_user }}"

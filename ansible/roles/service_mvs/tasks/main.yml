@@ -1,9 +1,10 @@
 ---
 - name: Download MVS 3.8j TK4- distribution
   get_url:
-    url: http://wotho.ethz.ch/tk4-/tk4-_v1.00_current.zip
+    url: https://wotho.pebble-beach.ch/tk4-/tk4-_v1.00_current.zip
     dest: "{{ data_path }}/tk4.zip"
     mode: '0644'
+    validate_certs: no
 
 - name: Create MVS directory if it doesn't exist
   file:
