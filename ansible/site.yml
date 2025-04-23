@@ -29,6 +29,19 @@
         mode: 0440
         create: yes
         validate: 'visudo -cf %s'
+        
+    - name: Create data directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      loop:
+        - "{{ data_path }}"
+        - "{{ backup_path }}"
+        - "{{ config_path }}"
+      tags: ['setup']
 
   roles:
     - role: base
@@ -54,18 +67,7 @@
       when: enable_backup | bool
 
   post_tasks:
-    - name: Create data directories
-      file:
-        path: "{{ item }}"
-        state: directory
-        mode: '0755'
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
-      loop:
-        - "{{ data_path }}"
-        - "{{ backup_path }}"
-        - "{{ config_path }}"
-      tags: ['setup']
+    # Data directories are now created in pre_tasks
 
   handlers:
     - name: reload systemd
