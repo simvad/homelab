@@ -1,4 +1,4 @@
-# HomeLab MVS
+# HomeLab
 
 Energy-efficient homelab with Hercules MVS mainframe emulation, auto power management, and remote access.
 
