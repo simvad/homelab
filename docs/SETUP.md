@@ -1,4 +1,4 @@
-# HomeLab MVS Setup Guide
+# HomeLab Setup Guide
 
 ## Prerequisites
 
@@ -73,7 +73,7 @@ ssh-copy-id -i ~/.ssh/homelab.pub homelab@$HOMELAB_IP
 
 4. Deploy server configuration:
 ```bash
-ansible-playbook -i ansible/inventory/homelab.yml ansible/site.yml
+ansible-playbook -i ansible/inventory/homelab.yml ansible/site.yml --ask-become-pass
 ```
 
 ### Client Installation

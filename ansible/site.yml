@@ -1,5 +1,5 @@
 ---
-- name: Configure HomeLab MVS Server
+- name: Configure HomeLab
   hosts: all
   become: yes
   

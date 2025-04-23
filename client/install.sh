@@ -13,7 +13,7 @@ mkdir -p "$CONFIG_DIR/lib"
 # Install dependencies
 if command -v apt-get >/dev/null 2>&1; then
     echo "Installing dependencies with apt..."
-    sudo apt-get update
+    sudo apt-get update || true
     sudo apt-get install -y wakeonlan openssh-client c3270
 elif command -v brew >/dev/null 2>&1; then
     echo "Installing dependencies with brew..."
@@ -51,13 +51,16 @@ read -p "Enter homelab IP address: " ip_address
 read -p "Enter homelab username [homelab]: " username
 username=${username:-homelab}
 
+# Set MVS port
+MVS_PORT="3505"
+
 # Save configuration
 cat > "$CONFIG_DIR/config" << EOF
 HOMELAB_MAC="$mac_address"
 HOMELAB_IP="$ip_address"
 HOMELAB_USER="$username"
 SSH_KEY_PATH="$HOME/.ssh/homelab"
-MVS_PORT="3505"
+MVS_PORT="$MVS_PORT"
 EOF
 
 # Add to PATH if needed
