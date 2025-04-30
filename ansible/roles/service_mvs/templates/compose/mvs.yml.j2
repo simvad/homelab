@@ -1,19 +1,20 @@
 version: "3.8"
 services:
   hercules:
-    image: rattydave/docker-hercules:latest
+    # Correct image for MVS 3.8j on Hercules
+    image: rattydave/docker-ubuntu-hercules-mvs:latest  
     container_name: hercules-mvs
     ports:
-      - "{{ mvs_console_port }}:3270"  # Hercules console
-      - "{{ mvs_terminal_port }}:3505"  # 3270 terminal emulator
+      - "{{ mvs_console_port }}:3270"   # 3270 TN3270 terminal
+      - "{{ mvs_terminal_port }}:3505"  # Hercules console via telnet
     volumes:
       - "{{ data_path }}/mvs:/opt/mvs"
     restart: unless-stopped
     environment:
-      - CONF_FILE=unattended  # Use unattended mode
-      - CPUSERIAL=000001      # CPU serial number
-      - CPUMODEL=3033         # CPU model
-      - TZ=UTC                # Timezone
+      - CONF_FILE=unattended           # unattended IPL
+      - CPUSERIAL=000001               # CPU serial
+      - CPUMODEL=3033                  # Model 3033
+      - TZ=UTC                         # Timezone
     command: "/opt/mvs/mvs"
     labels:
       - "homelab.type=mvs"
